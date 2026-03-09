@@ -1,9 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 
-// @ts-ignore
-import { expect } from "chai";
-
-describe("joyeria_blockchain", () => {
+async function ejecutarJoyeria() {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
@@ -15,7 +12,10 @@ describe("joyeria_blockchain", () => {
     program.programId
   );
 
-  it("Inicializar Inventario y Registrar Diamante", async () => {
+  console.log("Iniciando operaciones de joyeria...");
+
+  // 1. Inicializar Inventario
+  try {
     await program.methods
       .inicializarInventario("Joyeria de Lujo Real")
       .accounts({
@@ -24,69 +24,53 @@ describe("joyeria_blockchain", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
+    console.log("Inventario creado con exito.");
+  } catch (e) {
+    console.log("El inventario ya existe, continuando...");
+  }
 
-    const nSerie = "D-BR-77889911";
-    const quilates = 250;
+  // 2. Registrar Diamante
+  // Tip: Cambia este numero de serie en cada 'run' para ver como crece el stock
+  const nSerie = "D-BR-77889911";
+  const quilates = 250;
 
-    await program.methods
-      .registrarDiamante(nSerie, quilates)
-      .accounts({
-        inventario: inventarioPda,
-        owner: owner.publicKey,
-      })
-      .rpc();
+  await program.methods
+    .registrarDiamante(nSerie, quilates)
+    .accounts({
+      inventario: inventarioPda,
+      owner: owner.publicKey,
+    })
+    .rpc();
+  console.log("Diamante " + nSerie + " registrado.");
 
-    const cuenta = await program.account.inventario.fetch(inventarioPda);
-    expect(cuenta.diamantes[0].numeroSerie).to.equal(nSerie);
-    expect(cuenta.diamantes[0].quilates).to.equal(quilates);
-    expect(cuenta.diamantes[0].autenticado).to.be.true;
-    console.log("Diamante D-BR-77889911 registrado con exito");
-  });
+  // 3. Ver Inventario
+  const cuenta = await program.account.inventario.fetch(inventarioPda);
+  console.log("Diamantes en stock: " + cuenta.diamantes.length);
 
-  it("Alternar Autenticacion", async () => {
-    const nSerie = "D-BR-77889911";
+  // 4. Alternar Autenticacion
+  await program.methods
+    .alternarAutenticacion(nSerie)
+    .accounts({
+      inventario: inventarioPda,
+      owner: owner.publicKey,
+    })
+    .rpc();
+  console.log("Estado de autenticacion actualizado.");
 
-    await program.methods
-      .alternarAutenticacion(nSerie)
-      .accounts({
-        inventario: inventarioPda,
-        owner: owner.publicKey,
-      })
-      .rpc();
+  // 5. Transferir Diamante (Comentado para mantener los datos)
+  /*
+  await program.methods
+    .transferirDiamante(nSerie)
+    .accounts({
+      inventario: inventarioPda,
+      owner: owner.publicKey,
+    })
+    .rpc();
+  console.log("Diamante transferido y removido.");
+  */
+}
 
-    const cuenta = await program.account.inventario.fetch(inventarioPda);
-    expect(cuenta.diamantes[0].autenticado).to.be.false;
-    console.log("Estado de autenticacion del diamante D-BR-77889911 cambiado a false");
-  });
-
-  it("Transferencia de Diamante", async () => {
-    const nSerie = "D-BR-77889911";
-
-    await program.methods
-      .transferirDiamante(nSerie)
-      .accounts({
-        inventario: inventarioPda,
-        owner: owner.publicKey,
-      })
-      .rpc();
-
-    const cuenta = await program.account.inventario.fetch(inventarioPda);
-    expect(cuenta.diamantes.length).to.equal(0);
-    console.log("Diamante D-BR-77889911 transferido y removido del inventario");
-  });
-
-  it("Caso Extra: Validacion de Error Serie Inexistente", async () => {
-    try {
-      await program.methods
-        .removerDiamante("ERROR-999")
-        .accounts({
-          inventario: inventarioPda,
-          owner: owner.publicKey,
-        })
-        .rpc();
-      expect.fail("El programa deberia haber fallado");
-    } catch (err) {
-      console.log("El sistema rechazo correctamente la serie inexistente ERROR-999");
-    }
-  });
+// Ejecucion del script
+ejecutarJoyeria().catch((err) => {
+  console.error("Error en la ejecucion:", err);
 });
