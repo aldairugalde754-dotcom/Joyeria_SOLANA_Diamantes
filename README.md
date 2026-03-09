@@ -1,60 +1,43 @@
-# Biblioteca en Solana
+# 💎 JoyeriaBlockchain - Solana Smart Contract
 
-![banner](./images/banner-biblioteca.jpg)
+Este proyecto consiste en un programa desarrollado con el framework **Anchor** para la red de **Solana**, diseñado para gestionar el inventario de una joyería de lujo de forma inmutable y transparente. El sistema permite el rastreo completo de diamantes, desde su registro inicial hasta su transferencia definitiva.
 
-CRUD básico de un Solana Program desarrollado con Rust y Anchor desde el Solana Playground. 
+---
 
-Puedes comenzar dándole Fork a este repositorio (abajo te explicamos como 👇), **hemos preparado un entorno de codespaces listo para que no tengas que instalar nada**, solo déjate llevar por la fluidez de los ejercicios y temas desarrollados especialmente para ti. 
+## 🚀 Características Técnicas
 
-Asegúrate de clonar este repositorio a tu cuenta usando el botón **`Fork`**.
+* **Gestión de Inventario Basada en PDAs**: Utiliza *Program Derived Addresses* para asegurar que cada dueño tenga su propio inventario único ligado a su llave pública.
+* **Seguridad y Autorización**: Implementa macros de validación `require!` para garantizar que solo el propietario original pueda modificar sus registros.
+* **Trazabilidad**: Cada diamante cuenta con un número de serie único, pesaje en quilates y un estado de autenticación verificable on-chain.
 
-![fork](./images/fork.png)
+---
 
-## Importando el proyecto 
+## 🛠️ Estructura del Programa
 
-Ya con el repositorio en tu cuenta lo siguiente que debes hacer copiar el `enlace de tu repositorio`, lo que se puede hacer directamente desdel navegador:
+El Smart Contract (`lib.rs`) expone las siguientes funciones principales:
 
-![repo](./images/repo.png)
-Posteriormente, lo uniremos con el siguiente enlace en nuestro navegador de preferencia:
+| Función | Descripción |
+| :--- | :--- |
+| `inicializar_inventario` | Configura el espacio en la blockchain y asigna un nombre a la sucursal. |
+| `registrar_diamante` | Añade una nueva pieza al stock con sus metadatos técnicos. |
+| `alternar_autenticacion` | Permite actualizar el estatus de certificación de una pieza específica. |
+| `transferir_diamante` | Gestiona la salida de activos del sistema tras una venta o movimiento. |
+| `ver_inventario` | Función de lectura para visualizar el estado actual del stock en logs. |
 
-```url
-https://beta.solpg.io/
-```
+---
 
-Lo que nos dará algo parecido a:
+## 📦 Requisitos de Almacenamiento
 
-![url](./images/url.png)
+La cuenta de `Inventario` está optimizada utilizando la macro `#[derive(InitSpace)]` de Anchor para un cálculo preciso del espacio:
 
-Al pulsar enter seremos enviados al `Solana Playground` con nuestro proyecto abierto:
+* **Propietario**: 32 bytes (`Pubkey`).
+* **Nombre de Sucursal**: Máximo 50 caracteres (`String`).
+* **Capacidad**: Vector limitado a 20 diamantes por inventario para optimizar costos de renta (Rent-Exempt).
 
-![pg](./images/pg.png)
+---
 
-Para guardarlo solo damos clic en el boton `import` y asignamos un nombre:
+## 💻 Configuración y Despliegue
 
-![import](./images/import.png)
-
-## Preparacion del entorno
-
-Primero conectaremos el entorno con la devnet, lo que tambien procederá a la creación de una wallet. Para eso daremos clic en donde dice **Not Conected**:
-
-![playground1](./images/playground1.png)
-
-Saldrá la siguiente ventana donde daremos en el botón **Continue**:
-
-![wallet](./images/wallet.png)
-
-Como resultado se mostrará la siguiente información:
-
-![status](./images/status.png)
-
-* En verde: el estado de la conexión y el entorno al que se encuentra conectado
-
-* En amarillo: la la dirección de la wallet conectada
-
-* En azul: la cantidad de tokens en la wallet
-
-> ℹ️ ¿Quieres ver el ejemplo de un "Hola Mundo" en Solana?. Da clic aquí: 👉 [Ver Ejemplo](https://github.com/WayLearnLatam/Solana-starter-kit/tree/1fc6349ba63375a3fe223d8d56911bc64765459b/build-deploy)
-
-> ℹ️ ¿Cuentas con una Wallet de [Phantom](https://phantom.com/) que deseas importar?, Da clic aquí para ver como hacerlo: 
-
-👉 [Como Importar una Wallet](https://github.com/WayLearnLatam/Solana-starter-kit/tree/1fc6349ba63375a3fe223d8d56911bc64765459b/import-key-a-playground)
+### Program ID
+```rust
+declare_id!("5s3YhX3DyzgeMng669Hg17fEeH64iLCdSp4dn6uYW8Cf");
