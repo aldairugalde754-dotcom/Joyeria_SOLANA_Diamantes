@@ -107,11 +107,14 @@ declare_id!("5s3YhX3DyzgeMng669Hg17fEeH64iLCdSp4dn6uYW8Cf");
 
 Las siguientes capturas muestran pruebas del programa realizadas en **Anchor Playground** sobre **Solana Devnet**.
 
-### Inicialización de la joyería
-![Inicialización de la joyería](images/IniciarJoyeria.png)
-
 ### Despliegue del programa
 ![Despliegue del programa](images/Despliege.png)
+
+### Ejecución del Codigo TypeScritp para pruebas
+![Type Run](images/TypeRun.png)
+
+### Inicialización de la joyería
+![Inicialización de la joyería](images/IniciarJoyeria.png)
 
 ### Registro de diamante
 ![Registro de diamante](images/RegistroDeDiamante.png)
@@ -122,7 +125,5 @@ Las siguientes capturas muestran pruebas del programa realizadas en **Anchor Pla
 ### Transferencia de diamante
 ![Transferencia de diamante](images/TransferenciaDiamante.png)
 
-### Ejecución Type Run
-![Type Run](images/TypeRun.png)
 
 
