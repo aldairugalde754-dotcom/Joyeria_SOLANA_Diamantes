@@ -101,3 +101,28 @@ El programa incorpora validaciones para proteger la integridad del inventario:
 
 ```rust
 declare_id!("5s3YhX3DyzgeMng669Hg17fEeH64iLCdSp4dn6uYW8Cf");
+```
+
+## Evidencia de ejecución en Solana Devnet
+
+Las siguientes capturas muestran pruebas del programa realizadas en **Anchor Playground** sobre **Solana Devnet**.
+
+### Inicialización de la joyería
+![Inicialización de la joyería](IniciarJoyeria.png)
+
+### Despliegue del programa
+![Despliegue del programa](Despliege.png)
+
+### Registro de diamante
+![Registro de diamante](RegistroDeDiamante.png)
+
+### Actualización de diamante
+![Actualización de diamante](ActualizacionDiamante.png)
+
+### Transferencia de diamante
+![Transferencia de diamante](TransferenciaDiamante.png)
+
+### Ejecución Type Run
+![Type Run](TypeRun.png)
+
+
