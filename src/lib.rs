@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Ez2Y25tT932W655owicTz52vSDXPguVPsTUVKhgCJJtF");
+declare_id!("5s3YhX3DyzgeMng669Hg17fEeH64iLCdSp4dn6uYW8Cf");
 
 #[program]
 pub mod joyeria_blockchain {
