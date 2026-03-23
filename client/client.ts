@@ -1,76 +1,165 @@
 import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { DiamondCert } from "../target/types/diamond_cert";
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 
-async function ejecutarJoyeria() {
+async function ejecutarFlujoCertificacion() {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
+  const program = anchor.workspace.DiamondCert as Program<DiamondCert>;
 
-  const program = anchor.workspace.JoyeriaBlockchain;
-  const owner = provider.wallet;
+  const autoridadJoyeria = provider.wallet;
+  const primerComprador = anchor.web3.Keypair.generate();
+  const segundoComprador = anchor.web3.Keypair.generate();
 
-  const [inventarioPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("joyeria"), owner.publicKey.toBuffer()],
+  // Identificador unico para el certificado de esta sesion
+  const identificadorSerie = "CERT-V1-" + Date.now().toString().slice(-6);
+
+  // Derivacion de cuentas PDA (Program Derived Addresses)
+  const [joyeriaPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("joyeria"), autoridadJoyeria.publicKey.toBuffer()],
     program.programId
   );
 
-  console.log("Iniciando operaciones de joyeria...");
+  const [joyeriaAuthPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("joyeria_auth"), joyeriaPda.toBuffer()],
+    program.programId
+  );
 
-  // 1. Inicializar Inventario
+  const [certificadoPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("certificado"), Buffer.from(identificadorSerie)],
+    program.programId
+  );
+
+  const [mintPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("mint"), Buffer.from(identificadorSerie)],
+    program.programId
+  );
+
+  console.log("Configurando cuentas de prueba...");
+  const txFondos = new anchor.web3.Transaction().add(
+    anchor.web3.SystemProgram.transfer({
+      fromPubkey: autoridadJoyeria.publicKey,
+      toPubkey: primerComprador.publicKey,
+      lamports: 0.05 * anchor.web3.LAMPORTS_PER_SOL,
+    }),
+    anchor.web3.SystemProgram.transfer({
+      fromPubkey: autoridadJoyeria.publicKey,
+      toPubkey: segundoComprador.publicKey,
+      lamports: 0.05 * anchor.web3.LAMPORTS_PER_SOL,
+    })
+  );
+  await provider.sendAndConfirm(txFondos);
+
+  // 1. Registro de Entidad Emisora
+  console.log("Ejecutando: registrar_joyeria");
   try {
     await program.methods
-      .inicializarInventario("Joyeria de Lujo Real")
+      .registrarJoyeria("Certificadora Diamantes Pro", "Suiza", "CH-CERT-8821")
       .accounts({
-        inventario: inventarioPda,
-        owner: owner.publicKey,
+        autoridad: autoridadJoyeria.publicKey,
+        joyeria: joyeriaPda,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
-    console.log("Inventario creado con exito.");
   } catch (e) {
-    console.log("El inventario ya existe, continuando...");
+    console.log(
+      "Informacion: La entidad ya se encuentra registrada en la red."
+    );
   }
 
-  // 2. Registrar Diamante
-  // Tip: Cambia este numero de serie en cada 'run' para ver como crece el stock
-  const nSerie = "D-BR-77889911";
-  const quilates = 250;
+  // 2. Emision de Certificado Digital (NFT)
+  console.log(`Ejecutando: emitir_certificado (${identificadorSerie})`);
+  const ataPrimerComprador = getAssociatedTokenAddressSync(
+    mintPda,
+    primerComprador.publicKey
+  );
 
   await program.methods
-    .registrarDiamante(nSerie, quilates)
+    .emitirCertificado({
+      numeroSerie: identificadorSerie,
+      quilates: 175,
+      corte: "Radiante",
+      color: "G",
+      claridad: "VVS1",
+      precioUsd: new anchor.BN(9200),
+    })
     .accounts({
-      inventario: inventarioPda,
-      owner: owner.publicKey,
+      autoridad: autoridadJoyeria.publicKey,
+      joyeria: joyeriaPda,
+      joyeriaAuthPda: joyeriaAuthPda,
+      certificado: certificadoPda,
+      mint: mintPda,
+      tokenAccountComprador: ataPrimerComprador,
+      comprador: primerComprador.publicKey,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     })
     .rpc();
-  console.log("Diamante " + nSerie + " registrado.");
 
-  // 3. Ver Inventario
-  const cuenta = await program.account.inventario.fetch(inventarioPda);
-  console.log("Diamantes en stock: " + cuenta.diamantes.length);
+  // 3. Transferencia de Propiedad
+  console.log("Ejecutando: transferir_certificado");
+  const ataSegundoComprador = getAssociatedTokenAddressSync(
+    mintPda,
+    segundoComprador.publicKey
+  );
 
-  // 4. Alternar Autenticacion
   await program.methods
-    .alternarAutenticacion(nSerie)
+    .transferirCertificado(new anchor.BN(9800))
     .accounts({
-      inventario: inventarioPda,
-      owner: owner.publicKey,
+      vendedor: primerComprador.publicKey,
+      comprador: segundoComprador.publicKey,
+      certificado: certificadoPda,
+      mint: mintPda,
+      tokenVendedor: ataPrimerComprador,
+      tokenComprador: ataSegundoComprador,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
+    .signers([primerComprador])
     .rpc();
-  console.log("Estado de autenticacion actualizado.");
 
-  // 5. Transferir Diamante (Comentado para mantener los datos)
-  /*
+  // 4. Reporte de Incidencia (Robo)
+  console.log("Ejecutando: reportar_robo");
   await program.methods
-    .transferirDiamante(nSerie)
+    .reportarRobo("OFFICIAL-REP-5541")
     .accounts({
-      inventario: inventarioPda,
-      owner: owner.publicKey,
+      reportante: segundoComprador.publicKey,
+      certificado: certificadoPda,
+    })
+    .signers([segundoComprador])
+    .rpc();
+
+  // 5. Actualizacion de Tasacion
+  console.log("Ejecutando: actualizar_tasacion");
+  await program.methods
+    .actualizarTasacion(new anchor.BN(10500), "Revision trimestral de mercado")
+    .accounts({
+      autoridad: autoridadJoyeria.publicKey,
+      joyeria: joyeriaPda,
+      certificado: certificadoPda,
     })
     .rpc();
-  console.log("Diamante transferido y removido.");
-  */
+
+  // Verificacion Final de Estado
+  const estadoFinal = await program.account.certificado.fetch(certificadoPda);
+  console.log("\n--- REPORTE FINAL DE CERTIFICADO ---");
+  console.log("Serie:", estadoFinal.numeroSerie);
+  console.log("Propietario Actual:", estadoFinal.propietario.toBase58());
+  console.log("Valuacion:", estadoFinal.precioUsd.toString(), "USD");
+  console.log("Estado:", JSON.stringify(estadoFinal.estado));
+  console.log("Total Transferencias:", estadoFinal.numTransferencias);
+  console.log("Registros en Historial:", estadoFinal.historial.length);
+  console.log("------------------------------------\n");
 }
 
-// Ejecucion del script
-ejecutarJoyeria().catch((err) => {
-  console.error("Error en la ejecucion:", err);
+ejecutarFlujoCertificacion().catch((error) => {
+  console.error("Error en ejecucion:", error);
 });
